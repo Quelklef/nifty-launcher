@@ -11,9 +11,6 @@
   body:not(.done-loading) {
     opacity: 0;
   }
-  body {
-    transition: opacity .15s;
-  }
   </style>
   <script>
   window.okDoneLoading = function() {
@@ -43,19 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function main() {
   const items = getItems(nw.App.argv);
 
-  for (const item of items)
-    if (item.icon)
-      preloadImage(item.icon);
-
   const win = nw.Window.get();
   win.setPosition('center');
   initRender(items);
   window.okDoneLoading();
-}
-
-function preloadImage(url) {
-  const img = new Image();
-  img.src = url;
 }
 
 function getItems(argv) {
