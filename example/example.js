@@ -26,9 +26,17 @@ items.push({
 });
 
 items.push({
-  text: 'Chrome',
+  text: 'Google Chrome',
   exec: function() {
     exec('google-chrome-stable');
   },
   icon: 'file://' + plib.resolve(__dirname, './icons/chrome.png'),
+});
+
+items.push({
+  text: 'Screenshot',
+  exec: function() {
+    exec('put-your-screenshot-command-here');
+  },
+  icon: 'file://' + plib.resolve(__dirname, './icons/screenshot.webp'),
 });
