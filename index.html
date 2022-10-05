@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+  <title>Nifty!</title>
+
+  <style>
+  body {
+    background: none;
+  }
+  body:not(.done-loading) {
+    opacity: 0;
+  }
+  body {
+    transition: opacity .15s;
+  }
+  </style>
+  <script>
+  window.okDoneLoading = function() {
+    const go = () => document.body.classList.add('done-loading');
+    setTimeout(go, 0);
+  }
+  </script>
+
+</head>
+
+<body>
+
+<script>
+
+const plib = require('path');
+const Fuse = require('fuse.js');
+
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    main();
+  } catch (e) {
+    console.error(e);
+    nw.App.quit();
+  }
+});
+
+function main() {
+  const items = getItems(nw.App.argv);
+
+  for (const item of items)
+    if (item.icon)
+      preloadImage(item.icon);
+
+  const win = nw.Window.get();
+  win.setPosition('center');
+  initRender(items);
+  window.okDoneLoading();
+}
+
+function preloadImage(url) {
+  const img = new Image();
+  img.src = url;
+}
+
+function getItems(argv) {
+  if (argv.length !== 2)
+    throw Error('Expected exactly 1 argument, a path to a javascript file');
+  const path = argv[1];
+  const client = require(plib.resolve(process.env.PWD, path));
+  if (!client.items)
+    throw Error('Expected given file to define an exports.items');
+  const items = client.items;
+  for (const item of items)
+    validateItem(item);
+  return items;
+}
+
+function validateItem(item) {
+  if (typeof item !== 'object' || item === null)
+    throw Error('Unaccpetable: non-object or null item');
+  if (typeof item.text !== 'string')
+    throw Error('All items must have a string .text');
+  if (typeof item.exec !== 'function')
+    throw Error('All items must have a function .exec');
+}
+
+function initRender(items) {
+
+  const $body = document.body;
+
+  const $main = document.createElement('main');
+  $body.append($main);
+
+  const $search = document.createElement('input');
+  $main.append($search)
+  $search.id = 'search';
+  $search.type = 'text';
+  $search.focus();
+
+  const $items = document.createElement('div');
+  $items.id = 'items';
+  $main.append($items);
+
+  const initState = {
+    items,
+    selectIndex: 0,
+    query: '',
+    $elems: { $body, $main, $search, $items },
+  };
+  render(initState);
+}
+
+function render(state) {
+
+  let resultItems;
+  if (!state.query) {
+    resultItems = [];
+  } else {
+    resultItems = fuzzySort(state.items, 'text', state.query);
+    resultItems = resultItems.slice(0, 4);
+  }
+
+  const $items = document.createElement('div');
+  $items.id = 'items';
+
+  state.$elems.$items.replaceWith($items);
+  state.$elems.$items = $items;
+
+  for (const [item, index] of enumerate(resultItems)) {
+    const $item = document.createElement('div');
+    $item.classList.add('item');
+
+    if (index === state.selectIndex)
+      $item.classList.add('selected');
+
+    const $icon = document.createElement('img');
+    $item.append($icon);
+    $icon.classList.add('item-icon');
+    const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    $icon.src = item.icon ?? blankImg;
+
+    const $text = document.createElement('span');
+    $item.append($text);
+    $text.classList.add('item-text');
+    $text.innerText = item.text;
+
+    $items.append($item);
+  }
+
+  // --
+
+  state.$elems.$search.addEventListener('keydown', function listener(ev) {
+    onKey(ev, state => {
+      state.$elems.$search.removeEventListener('keydown', listener);
+      render(state);
+    });
+  });
+
+  function onKey(ev, render) {
+
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (state.selectIndex === null) {
+        state.selectIndex =
+          mod(ev.key === 'ArrowDown' ? 0 : -1, resultItems.length);
+      } else {
+        const delta = ev.key === 'ArrowDown' ? 1 : -1;
+        state.selectIndex = mod(state.selectIndex + delta, resultItems.length);
+      }
+      render(state);
+    }
+
+    else if (ev.key === 'Enter') {
+      if (state.selectIndex === null) return;
+      const selected = resultItems[state.selectIndex];
+      if (!selected) return;
+      nw.Window.get().hide();  // in case exec() does something like take a screenshot
+      selected.exec();
+      nw.App.quit();
+    }
+
+    else if (ev.key === 'Escape') {
+      nw.App.quit();
+    }
+
+    else {
+      state.query = state.$elems.$search.value;
+      state.selectIndex = 0;
+      render(state);
+    }
+
+  }
+
+}
+
+function * enumerate(xs) {
+  let i = 0;
+  for (const x of xs) {
+    yield [x, i];
+    i++;
+  }
+}
+
+function mod(n, k) {
+  return ((n % k) + k) % k;
+}
+
+function fuzzySort(items, key, query) {
+
+  // sort
+  const fuse = new Fuse(items, {
+    keys: [key],
+    minMatchCharLength: 0,
+  });
+  let result = fuse.search(query);
+  result = result.map(el => el.item);
+
+  // re-add removed items
+  const keys = new Set(result.map(item => item[key]));
+  for (const item of items) {
+    if (!keys.has(item[key]))
+      result.push(item);
+  }
+
+  return result;
+
+}
+
+</script>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap');
+
+:root {
+  --color-prim: #c06;
+  --color-grey: lightgrey;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  background: white;
+  margin: 15px;
+  box-shadow: 0 0 8px -4px rgba(20, 20, 20, .5);
+  border-radius: 3px;
+  border: 1px solid var(--color-prim);
+  padding: 0.75em 1em;
+}
+
+#search {
+  width: 100%;
+  font-size: 20px;
+  padding: 0.5em 1em;
+  border: 1px solid var(--color-grey);
+  border-radius: 3px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+#search:focus {
+  outline: none;
+  border-color: var(--color-prim);
+}
+
+#items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: hidden;
+}
+
+#items:not(:empty) {
+  margin-top: 10px;
+}
+
+.item {
+  width: 100%;
+  padding: 0.35em 0.7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: left;
+  font-size: 20px;
+}
+
+.item.selected {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.item-icon {
+  height: 1.5em;
+  width: 1.5em;
+}
+
+.item-text {
+  margin-left: 20px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+</style>
+
+</body>
+</html>

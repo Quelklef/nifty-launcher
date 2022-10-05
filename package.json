@@ -1,0 +1,21 @@
+{
+  "name": "nifty",
+  "scripts": {
+    "start": "nw"
+  },
+  "main": "index.html",
+  "chromium-args": "--enable-logging=stderr",
+  "window": {
+    "id": "nifty",
+    "title": "Nifty",
+    "always_on_top": true,
+    "transparent": true,
+    "frame": false,
+    "width": 800,
+    "height": 600,
+    "resizable": false
+  },
+  "dependencies": {
+    "fuse.js": "^6.6.2"
+  }
+}
