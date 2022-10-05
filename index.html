@@ -104,6 +104,7 @@ function initRender(items) {
     $elems: { $body, $main, $search, $items },
   };
   render(initState);
+
 }
 
 function render(state) {
@@ -145,14 +146,12 @@ function render(state) {
 
   // --
 
-  state.$elems.$search.addEventListener('keydown', function listener(ev) {
-    onKey(ev, state => {
-      state.$elems.$search.removeEventListener('keydown', listener);
-      render(state);
-    });
-  });
+  const target = trackListeners(state.$elems.$search);
+  const purgeAndRender = state => { target.clearEventListeners(); render(state); };
+  target.addEventListener('keydown', ev => onKeyDown(ev, purgeAndRender));
+  target.addEventListener('input', ev => onInput(ev, purgeAndRender));
 
-  function onKey(ev, render) {
+  function onKeyDown(ev, render) {
 
     if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
       ev.preventDefault();
@@ -179,12 +178,12 @@ function render(state) {
       nw.App.quit();
     }
 
-    else {
-      state.query = state.$elems.$search.value;
-      state.selectIndex = 0;
-      render(state);
-    }
+  }
 
+  function onInput(ev, render) {
+    state.query = state.$elems.$search.value;
+    state.selectIndex = 0;
+    render(state);
   }
 
 }
@@ -220,6 +219,20 @@ function fuzzySort(items, key, query) {
 
   return result;
 
+}
+
+function trackListeners($el) {
+  const bound = [];
+  return {
+    addEventListener(evName, listener) {
+      $el.addEventListener(evName, listener);
+      bound.push([evName, listener]);
+    },
+    clearEventListeners() {
+      for (const [evName, listener] of bound)
+        $el.removeEventListener(evName, listener);
+    },
+  };
 }
 
 </script>
