@@ -28,6 +28,21 @@
 const plib = require('path');
 const Fuse = require('fuse.js');
 
+let onAppReshow = null;
+let hideApp;
+{
+  const win = nw.Window.get();
+  hideApp = () => win.hide();
+  nw.App.on('open', () => {
+    // This event fires when the user tries to start the app but
+    // it's already open in an existing process
+    win.show();
+    win.setPosition('center');
+    win.focus();
+    onAppReshow && onAppReshow();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   try {
     main();
@@ -157,13 +172,26 @@ function render(state) {
       if (state.selectIndex === null) return;
       const selected = resultItems[state.selectIndex];
       if (!selected) return;
-      nw.Window.get().hide();  // in case exec() does something like take a screenshot
+      hideApp();  // in case exec() does something like take a screenshot
       selected.exec();
-      nw.App.quit();
+      softCloseApp();
     }
 
     else if (ev.key === 'Escape') {
-      nw.App.quit();
+      softCloseApp();
+    }
+
+    // Prefer a soft-close over a quit because quick startup time is crucial
+    // for an app like this
+    function softCloseApp() {
+      hideApp();
+      state.$elems.$search.value = '';
+      state.query = '';
+      state.selectIndex = 0;
+      render(state);
+      onAppReshow = () => {
+        state.$elems.$search.focus();
+      };
     }
 
   }
