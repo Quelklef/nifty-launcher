@@ -173,6 +173,7 @@ function render(state) {
       const selected = resultItems[state.selectIndex];
       if (!selected) return;
       hideApp();  // in case exec() does something like take a screenshot
+      console.log(`Executing: ${selected.text}`);
       selected.exec();
       softCloseApp();
     }

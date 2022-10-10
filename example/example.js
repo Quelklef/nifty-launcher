@@ -11,7 +11,7 @@ function exec(str) {
     ['bash', '-c', str],
     {
       detached: true,
-      stdio: 'ignore',
+      stdio: ['ignore', 'inherit', 'inherit'],
     }
   );
   child.unref();
@@ -39,4 +39,11 @@ items.push({
     exec('put-your-screenshot-command-here');
   },
   icon: 'file://' + plib.resolve(__dirname, './icons/screenshot.webp'),
+});
+
+items.push({
+  text: 'Will error',
+  exec: function() {
+    exec('oh-no-bad-command');
+  },
 });
