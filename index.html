@@ -47,43 +47,24 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     main();
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
     nw.App.quit();
   }
 });
 
 function main() {
-  const items = getItems(nw.App.argv);
+  const argv = nw.App.argv;
+  if (argv.length !== 2)
+    throw Error('Expected exactly 1 argument, a path to a javascript file');
+  const { default: client } = require(plib.resolve(process.env.PWD, argv[1]))
 
   const win = nw.Window.get();
   win.setPosition('center');
-  initRender(items);
+  initRender(client);
   window.okDoneLoading();
 }
 
-function getItems(argv) {
-  if (argv.length !== 2)
-    throw Error('Expected exactly 1 argument, a path to a javascript file');
-  const path = argv[1];
-  const client = require(plib.resolve(process.env.PWD, path));
-  if (!client.items)
-    throw Error('Expected given file to define an exports.items');
-  const items = client.items;
-  for (const item of items)
-    validateItem(item);
-  return items;
-}
-
-function validateItem(item) {
-  if (typeof item !== 'object' || item === null)
-    throw Error('Unaccpetable: non-object or null item');
-  if (typeof item.text !== 'string')
-    throw Error('All items must have a string .text');
-  if (typeof item.exec !== 'function')
-    throw Error('All items must have a function .exec');
-}
-
-function initRender(items) {
+function initRender(client) {
 
   const $body = document.body;
 
@@ -101,7 +82,7 @@ function initRender(items) {
   $main.append($items);
 
   const initState = {
-    items,
+    client,
     selectIndex: 0,
     query: '',
     $elems: { $body, $main, $search, $items },
@@ -112,13 +93,8 @@ function initRender(items) {
 
 function render(state) {
 
-  let resultItems;
-  if (!state.query) {
-    resultItems = [];
-  } else {
-    resultItems = fuzzySort(state.items, 'text', state.query);
-    resultItems = resultItems.slice(0, 4);
-  }
+  let resultItems = callClient(state);
+  resultItems = resultItems.slice(0, 4);
 
   const $items = document.createElement('div');
   $items.id = 'items';
@@ -127,23 +103,7 @@ function render(state) {
   state.$elems.$items = $items;
 
   for (const [item, index] of enumerate(resultItems)) {
-    const $item = document.createElement('div');
-    $item.classList.add('item');
-
-    if (index === state.selectIndex)
-      $item.classList.add('selected');
-
-    const $icon = document.createElement('img');
-    $item.append($icon);
-    $icon.classList.add('item-icon');
-    const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-    $icon.src = item.icon ?? blankImg;
-
-    const $text = document.createElement('span');
-    $item.append($text);
-    $text.classList.add('item-text');
-    $text.innerText = item.text;
-
+    const $item = item.render({ isSelected: index === state.selectIndex });
     $items.append($item);
   }
 
@@ -203,6 +163,87 @@ function render(state) {
     render(state);
   }
 
+}
+
+// Client library object
+const lib = {
+
+  sort(items, query) {
+    const sticky = items.filter(item => item.isSticky);
+    const nonsticky = items.filter(item => !item.isSticky);
+
+    const stickySorted = fuzzySort(sticky, 'text', query);
+    const nonstickySorted = fuzzySort(nonsticky, 'text', query);
+
+    return [].concat(stickySorted, nonstickySorted);
+  },
+
+  exec(str) {
+    const proc = require('child_process');
+    const child = proc.spawn(
+      '/usr/bin/env',
+      ['bash', '-c', str],
+      {
+        detached: true,
+        stdio: ['ignore', 'inherit', 'inherit'],
+      }
+    );
+    child.unref();
+  },
+
+  mkItem({ text, exec, icon }) {
+    return {
+      text,
+      exec,
+      render({ isSelected }) {
+        const $item = document.createElement('div');
+        $item.classList.add('item');
+        if (isSelected) $item.classList.add('selected');
+
+        const $icon = document.createElement('img');
+        $item.append($icon);
+        $icon.classList.add('item-icon');
+        const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        $icon.src = icon ?? blankImg;
+
+        const $text = document.createElement('span');
+        $item.append($text);
+        $text.classList.add('item-text');
+        $text.innerText = text;
+
+        return $item;
+      },
+      isSticky: false,
+    };
+  },
+
+  mkHeadline({ text, exec }) {
+    return {
+      text,
+      exec,
+      render({ isSelected }) {
+        const $item = document.createElement('div');
+        $item.classList.add('item');
+        if (isSelected) $item.classList.add('selected');
+
+        const $text = document.createElement('span');
+        $item.append($text);
+        $text.classList.add('item-text');
+        if (text.trim() !== '')
+          $text.innerText = text;
+        else
+          $text.innerHTML = '&nbsp;';
+
+        return $item;
+      },
+      isSticky: true,
+    };
+  },
+
+}
+
+function callClient(state) {
+  return state.client(lib, state.query);
 }
 
 function * enumerate(xs) {
@@ -322,10 +363,10 @@ main {
 .item-icon {
   height: 1.5em;
   width: 1.5em;
+  margin-right: 20px;
 }
 
 .item-text {
-  margin-left: 20px;
   font-family: 'Open Sans', sans-serif;
 }
 
