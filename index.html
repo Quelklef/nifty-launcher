@@ -93,8 +93,7 @@ function initRender(client) {
 
 function render(state) {
 
-  let resultItems = callClient(state);
-  resultItems = resultItems.slice(0, 4);
+  const resultItems = callClient(state);
 
   const $items = document.createElement('div');
   $items.id = 'items';
@@ -133,7 +132,7 @@ function render(state) {
       const selected = resultItems[state.selectIndex];
       if (!selected) return;
       hideApp();  // in case exec() does something like take a screenshot
-      console.log(`Executing: ${selected.text}`);
+      console.log(`Selected: ${selected.displayText}`);
       selected.exec();
       softCloseApp();
     }
@@ -172,8 +171,8 @@ const lib = {
     const sticky = items.filter(item => item.isSticky);
     const nonsticky = items.filter(item => !item.isSticky);
 
-    const stickySorted = fuzzySort(sticky, 'text', query);
-    const nonstickySorted = fuzzySort(nonsticky, 'text', query);
+    const stickySorted = fuzzySort(sticky, 'searchText', query);
+    const nonstickySorted = fuzzySort(nonsticky, 'searchText', query);
 
     return [].concat(stickySorted, nonstickySorted);
   },
@@ -191,52 +190,56 @@ const lib = {
     child.unref();
   },
 
-  mkItem({ text, exec, icon }) {
-    return {
-      text,
+  mkSimple({
+    text,
+    exec,
+    icon,
+    isSticky,
+  }) {
+    return lib.mkItem({
+      displayText: text,
+      searchText: text,
       exec,
-      render({ isSelected }) {
-        const $item = document.createElement('div');
-        $item.classList.add('item');
-        if (isSelected) $item.classList.add('selected');
-
-        const $icon = document.createElement('img');
-        $item.append($icon);
-        $icon.classList.add('item-icon');
-        const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-        $icon.src = icon ?? blankImg;
-
-        const $text = document.createElement('span');
-        $item.append($text);
-        $text.classList.add('item-text');
-        $text.innerText = text;
-
-        return $item;
-      },
-      isSticky: false,
-    };
+      icon,
+      isSticky,
+    })
   },
 
-  mkHeadline({ text, exec }) {
+  mkItem({
+    displayText,
+    searchText,
+    exec,
+    isSticky,
+    icon
+  }) {
     return {
-      text,
-      exec,
+      displayText,
+      searchText,
+      exec: exec || (() => {}),
+      isSticky: isSticky || false,
       render({ isSelected }) {
         const $item = document.createElement('div');
         $item.classList.add('item');
         if (isSelected) $item.classList.add('selected');
 
+        if (icon !== null && icon !== undefined) {
+          const $icon = document.createElement('img');
+          $item.append($icon);
+          $icon.classList.add('item-icon');
+          const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+          $icon.src = icon ?? blankImg;
+        }
+
         const $text = document.createElement('span');
         $item.append($text);
         $text.classList.add('item-text');
-        if (text.trim() !== '')
-          $text.innerText = text;
+        if (displayText.trim() !== '')
+          $text.innerText = displayText;
         else
           $text.innerHTML = '&nbsp;';
 
         return $item;
       },
-      isSticky: true,
     };
   },
 
@@ -314,11 +317,16 @@ body {
 
 main {
   background: white;
-  margin: 15px;
   box-shadow: 0 0 8px -4px rgba(20, 20, 20, .5);
   border-radius: 3px;
   border: 1px solid var(--color-prim);
   padding: 0.75em 1em;
+
+  margin: 15px;
+  max-height: calc(100vh - 30px);
+
+  display: flex;
+  flex-direction: column;
 }
 
 #search {
@@ -339,7 +347,8 @@ main {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow-y: hidden;
+  overflow-y: auto;
+  flex: 1;
 }
 
 #items:not(:empty) {

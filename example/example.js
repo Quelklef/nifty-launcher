@@ -14,7 +14,7 @@ function client(
   // First, we'll populate it with some standard items
 
   // A firefox launcher
-  items.push(lib.mkItem({
+  items.push(lib.mkSimple({
     text: 'Firefox',
     exec: function() {
       // On select, run the "firefox" command
@@ -24,7 +24,7 @@ function client(
   }));
 
   // A chrome launcher, too; why not?
-  items.push(lib.mkItem({
+  items.push(lib.mkSimple({
     text: 'Google Chrome',
     exec: function() {
       lib.exec('google-chrome');
@@ -32,13 +32,16 @@ function client(
     icon: 'file://' + plib.resolve(__dirname, './icons/chrome.png'),
   }));
 
-  // A dummy item
-  items.push(lib.mkItem({
-    text: 'Dummy item -- will error',
-    exec: function() {
-      throw 'oopsies';
-    },
-  }));
+  // A few dummy items
+  const N = query === "!" ? 100 : "1";
+  for (let n = 1; n <= N; n++) {
+    items.push(lib.mkSimple({
+      text: `Dummy item ${n}`,
+      exec: function() {
+        throw 'oopsies';
+      },
+    }));
+  }
 
   // If the query starts with an equals, we'll interpret
   // it as a javascript expression to evaluate.
@@ -55,14 +58,17 @@ function client(
       // As such, ignore an error.
     }
 
-    items.push(lib.mkHeadline({
-      text: result ? (result + '') : '',
-      exec: () => {},  // do nothing on select
+    items.push(lib.mkSimple({
+      text: result ? ('= ' + result) : '',
+      isSticky: true,
     }));
   }
 
   // Sort the items according to the query
   items = lib.sort(items, query);
+
+  // Show only the first six
+  items = items.slice(0, 6);
 
   // Return!
   return items;

@@ -35,17 +35,25 @@ type Lib =
 
   -- | Make a standard item
   , mkItem ::
-      { text :: String
-      , exec :: () -> ()
-      , icon [optional] :: String
+      { displayText :: String
+      , searchText :: String
+      , isSticky [optional] :: Bool
+          -- ^ Whether to stick to top of search results
+      , exec [optional] :: () -> ()
+          -- ^ What to do on select
+      , icon [optional] :: String | ""
           -- ^ Icon URI
+          --   If omitted, no icon
+          --   If '""', empty icon
       }
       -> Item
 
-  -- | Make a sticky item
-  , mkHeadline ::
+  -- | Like mkItem, but combines displayText and searchText
+  , mkItem ::
       { text :: String
-      , exec :: () -> ()
+      , isSticky [optional] :: Bool
+      , exec [optional] :: () -> ()
+      , icon [optional] :: String | ""
       }
       -> Item
   }
