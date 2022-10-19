@@ -49,7 +49,7 @@ type Lib =
       -> Item
 
   -- | Like mkItem, but combines displayText and searchText
-  , mkItem ::
+  , mkSimple ::
       { text :: String
       , isSticky [optional] :: Bool
       , exec [optional] :: () -> ()
