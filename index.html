@@ -8,16 +8,7 @@
   body {
     background: none;
   }
-  body:not(.done-loading) {
-    opacity: 0;
-  }
   </style>
-  <script>
-  window.okDoneLoading = function() {
-    const go = () => document.body.classList.add('done-loading');
-    setTimeout(go, 0);
-  }
-  </script>
 
 </head>
 
@@ -61,7 +52,6 @@ function main() {
   const win = nw.Window.get();
   win.setPosition('center');
   initRender(client);
-  window.okDoneLoading();
 }
 
 function initRender(client) {
