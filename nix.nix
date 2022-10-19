@@ -3,7 +3,10 @@
 pkgs =
   let
     rev = "02b279323f3b5b031cd8aeb6440d76f0b735855e";
-    fetched = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+    fetched = builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      sha256 = "0waj8ac4gplfqisz037dlicq8l0k41j9h3r93jighg4ildrgg9qc";
+    };
   in import fetched { inherit system; };
 
 npmlock2nix =
