@@ -7,7 +7,7 @@
   "chromium-args": "--enable-logging=stderr",
   "window": {
     "id": "nifty",
-    "title": "Nifty",
+    "title": "Nifty!",
     "always_on_top": true,
     "transparent": true,
     "frame": false,
