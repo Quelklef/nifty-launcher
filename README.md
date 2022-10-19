@@ -28,7 +28,7 @@ type Item =
 type Lib =
 
   -- | Built-in fuzzy sort
-  { sort :: Array Item -> Array Item
+  { sort :: (Array Item, String) -> Array Item
 
   -- | Execute a bash string
   , exec :: String -> ()
