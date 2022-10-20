@@ -1,6 +1,7 @@
-exports.default = client;
-
 const plib = require('path');
+const nifty = require('nifty');
+
+nifty.run(client);
 
 function client(
   lib,   // possibly-useful utilities

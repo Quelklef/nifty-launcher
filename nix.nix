@@ -42,7 +42,7 @@ deriv =
     dontUnpack = true;
     installPhase = ''
       mkdir -p $out/bin
-      cp ${src}/{index.html,package.json} $out
+      cp ${src}/*.{html,js,json} $out
       cp -r ${npmlock2nix.node_modules { inherit src; }}/node_modules $out
       cat <<EOF > $out/bin/nifty
       ${pkgs.nwjs}/bin/nw $out -- "\$@"

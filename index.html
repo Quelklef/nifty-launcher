@@ -32,10 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function main() {
-  const argv = nw.App.argv;
-  if (argv.length !== 2)
-    throw Error('Expected exactly 1 argument, a path to a javascript file');
-  const { default: client } = require(plib.resolve(process.env.PWD, argv[1]))
+  // WANT: this relies on the assumption that window._client
+  //       set before DOMContentLoaded is fired. Not positive,
+  //       but that's probably a race condition!
+  const client = window._client;
 
   const win = nw.Window.get();
   win.setPosition('center');
