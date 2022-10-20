@@ -11,27 +11,22 @@ The primary gimmick of Nifty is that it's configured via Javascript module inste
 
 This means that as use-cases of Nifty get more complex, the complexity of the API will only increase a little bit in response. This is a big improvement over the status quo of "starting simple" with a standard config file and eventually drowning in complexity trying to shoehorn in more and more features. (See, for instance, Typescript's `tsconfig.json`.) By choosing Javascript as its "config format", Nifty gives the user a massive amount of flexibility, power, and expresiveness.
 
-You use `nifty` by calling it with a path to your configuration module, eg `nifty /path/to/config.js`. The provided module is expected to define a global `exports` object of the type `Exports` specified below. Also see `example/`.
+You use `nifty` by calling it with a path to your configuration module, eg `nifty /path/to/config.js`. The provided module may use `require('nifty')` to gain access to the Nifty module, which has the type provided below. Also see `example/`.
 
 ```
-type Item =
-  { text :: String
-      -- ^ Item text
-  , exec :: () -> ()
-      -- ^ What to do when the item is selected
-  , render :: ({ isSelected :: Bool }) -> Node
-      -- ^ Render to a DOM node
-  , isSticky :: Bool
-      -- ^ Sticks to top of sort
+exports :: Exports
+
+type Exports =
+  { run :: (Query -> Array Item) -> ()
+  , lib :: Lib
   }
+
+type Query = String
 
 type Lib =
 
   -- | Built-in fuzzy sort
   { sort :: (Array Item, String) -> Array Item
-
-  -- | Execute a bash string
-  , exec :: String -> ()
 
   -- | Make a standard item
   , mkItem ::
@@ -57,16 +52,17 @@ type Lib =
       }
       -> Item
   }
-
-type Client =
-   ( Lib
-   , String
-       -- ^ Search query
-   )
-  -> Array Item
-       -- ^ What items to display
-
-type Exports = { default :: Client }
+  
+type Item =
+  { text :: String
+      -- ^ Item text
+  , exec :: () -> ()
+      -- ^ What to do when the item is selected
+  , render :: ({ isSelected :: Bool }) -> Node
+      -- ^ Render to a DOM node
+  , isSticky :: Bool
+      -- ^ Sticks to top of sort
+  }
 ```
 
 
