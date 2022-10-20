@@ -1,12 +1,9 @@
 const plib = require('path');
 const nifty = require('nifty');
 
-nifty.run(client);
+const util = require('./util.js');
 
-function client(
-  lib,   // possibly-useful utilities
-  query, // current search query
-) {
+nifty.run(query => {
 
   // Our job is to build the list of search results
   // Call it 'items'
@@ -15,31 +12,31 @@ function client(
   // First, we'll populate it with some standard items
 
   // A firefox launcher
-  items.push(lib.mkSimple({
+  items.push(nifty.lib.mkSimple({
     text: 'Firefox',
     exec: function() {
       // On select, run the "firefox" command
-      lib.exec('firefox');
+      util.exec('firefox');
     },
-    icon: 'file://' + plib.resolve(__dirname, './icons/firefox.png'),
+    icon: util.mkIcon('./icons/firefox.png'),
   }));
 
   // A chrome launcher, too; why not?
-  items.push(lib.mkSimple({
+  items.push(nifty.lib.mkSimple({
     text: 'Google Chrome',
     exec: function() {
-      lib.exec('google-chrome');
+      util.exec('google-chrome');
     },
-    icon: 'file://' + plib.resolve(__dirname, './icons/chrome.png'),
+    icon: util.mkIcon('./icons/chrome.png'),
   }));
 
   // A few dummy items
   const N = query === "!" ? 100 : "1";
   for (let n = 1; n <= N; n++) {
-    items.push(lib.mkSimple({
+    items.push(nifty.lib.mkSimple({
       text: `Dummy item ${n}`,
       exec: function() {
-        throw 'oopsies';
+        throw Error('oopsies');
       },
     }));
   }
@@ -59,14 +56,14 @@ function client(
       // As such, ignore an error.
     }
 
-    items.push(lib.mkSimple({
+    items.push(nifty.lib.mkSimple({
       text: result ? ('= ' + result) : '',
       isSticky: true,
     }));
   }
 
   // Sort the items according to the query
-  items = lib.sort(items, query);
+  items = nifty.lib.sort(items, query);
 
   // Show only the first six
   items = items.slice(0, 6);
@@ -74,4 +71,4 @@ function client(
   // Return!
   return items;
 
-}
+});
