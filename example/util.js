@@ -37,7 +37,7 @@ function(theseArg, theseOpts = {}) {
   const thoseArgs = (
     typeof theseArg === 'string'
       ? ['/usr/bin/env', ['bash', '-i', '-c', theseArg]]
-      : [theseArg]
+      : [...theseArg.slice(0, 1), theseArg.slice(1)]
   );
 
   if (theseOpts.capture) {
