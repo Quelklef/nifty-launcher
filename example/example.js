@@ -3,63 +3,52 @@ const nifty = require('nifty');
 
 const util = require('./util.js');
 
+const pathEntries = Array.from(util.getPATH());
+
 nifty.run(query => {
 
-  // Our job is to build the list of search results
-  // Call it 'items'
   let items = [];
 
-  // First, we'll populate it with some standard items
-
-  // A firefox launcher
-  items.push(nifty.lib.mkSimple({
-    text: 'Firefox',
-    exec: function() {
-      // On select, run the "firefox" command
-      util.exec('firefox');
-    },
-    icon: util.mkIcon('./icons/firefox.png'),
-  }));
-
-  // A chrome launcher, too; why not?
-  items.push(nifty.lib.mkSimple({
-    text: 'Google Chrome',
-    exec: function() {
-      util.exec('google-chrome');
-    },
-    icon: util.mkIcon('./icons/chrome.png'),
-  }));
-
-  // A few dummy items
-  const N = query === "!" ? 100 : "1";
-  for (let n = 1; n <= N; n++) {
+  // Add a terminal launcher
+  {
+    const terminal = process.env.TERMINAL;
     items.push(nifty.lib.mkSimple({
-      text: `Dummy item ${n}`,
+      text: util.capitalize(terminal),
       exec: function() {
-        throw Error('oopsies');
+        // On select, run the "firefox" command
+        util.exec(terminal);
       },
+      icon: util.mkIcon('./icons/terminal.webp'),
     }));
   }
 
-  // If the query starts with an equals, we'll interpret
-  // it as a javascript expression to evaluate.
-  // Occasionally handy to, perhaps, quickly calculate sums
+  // If query starts with '=', interpret it as a mathematical
+  // expression and compute the result via `bc`.
+  // On select, copy the result to clipboard
   if (query.startsWith('=')) {
     const expr = query.slice(1);
-
     let result;
     try {
-      result = eval(expr);
+      result = util.exec(`echo ${util.escapeForBash(expr)} | bc`, { capture: true });
     } catch (e) {
-      // Will happen under normal circumstances, eg if
-      // the user types '=5+' on the way to typing '=5+3'.
-      // As such, ignore an error.
+      // bad syntax, etc; ignore.
     }
-
+    result = result ? (result + '') : '',
     items.push(nifty.lib.mkSimple({
-      text: result ? ('= ' + result) : '',
+      text: result,
       isSticky: true,
+      exec: () => util.copyToClipboard(result),
     }));
+  }
+
+  // If query starts with '$', search PATH entries instead
+  if (query.startsWith('$')) {
+    items = pathEntries.map(({ name, path }) =>
+      nifty.lib.mkSimple({
+        text: name,
+        exec: () => util.exec(path),
+      })
+    );
   }
 
   // Sort the items according to the query
