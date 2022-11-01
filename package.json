@@ -6,6 +6,6 @@
   "main": "main.js",
   "chromium-args": "--enable-logging=stderr",
   "dependencies": {
-    "fuse.js": "^6.6.2"
+    "fuzzysort": "^2.0.1"
   }
 }

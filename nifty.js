@@ -23,8 +23,6 @@ function(client) {
 
 // == lib ==  //
 
-const Fuse = require('fuse.js');
-
 const lib =
 exports.lib = {
 
@@ -93,23 +91,27 @@ exports.lib = {
 
 };
 
+const fz = require('fuzzysort');
 function fuzzySort(items, key, query) {
+  let results = fz.go(
+    query,
+    items,
+    {
+      key,
+      threshold: -Infinity,
+      limit: Infinity,
+      all: true,
+    }
+  );
 
-  // sort
-  const fuse = new Fuse(items, {
-    keys: [key],
-    minMatchCharLength: 0,
-  });
-  let result = fuse.search(query);
-  result = result.map(el => el.item);
+  results = results.map(res => res.obj);
 
   // re-add removed items
-  const keys = new Set(result.map(item => item[key]));
+  const keys = new Set(results.map(item => item[key]));
   for (const item of items) {
     if (!keys.has(item[key]))
-      result.push(item);
+      results.push(item);
   }
 
-  return result;
-
+  return results;
 }

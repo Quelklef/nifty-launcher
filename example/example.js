@@ -43,6 +43,7 @@ nifty.run(query => {
 
   // If query starts with '$', search PATH entries instead
   if (query.startsWith('$')) {
+    query = query.slice(1);
     items = pathEntries.map(({ name, path }) =>
       nifty.lib.mkSimple({
         text: name,
