@@ -4,7 +4,7 @@
     "start": "nw"
   },
   "main": "main.js",
-  "chromium-args": "--enable-logging=stderr",
+  "chromium-args": "--enable-logging=stderr --enable-transparent-visuals --disable-gpu",
   "dependencies": {
     "fuzzysort": "^2.0.1"
   }
